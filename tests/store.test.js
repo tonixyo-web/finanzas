@@ -1,5 +1,6 @@
 import { test, assertEqual, assertThrows, assertTrue } from "./runner.js";
 import { createStore, defaultState, migrate, postAutomatic, exportJSON, parseImport, STORAGE_KEY } from "../js/store.js";
+import { monthKey, todayStr } from "../js/format.js";
 import {
   addTransaction, updateTransaction, deleteTransaction, addValuation,
   saveAccount, deleteAccount, saveCategory, deleteCategory, saveRecurring, deleteRecurring
@@ -68,6 +69,56 @@ test("migrate rechaza formatos inválidos y rellena colecciones ausentes", () =>
   assertEqual(m.valuations, []);
   assertEqual(m.recurring, []);
   assertEqual(m.meta, { interestLastPosted: {} });
+});
+
+test("migrate descarta movimientos inválidos y conserva los válidos", () => {
+  const data = {
+    schemaVersion: 1,
+    accounts: [{ id: "a1" }],
+    categories: [{ id: "c1" }],
+    transactions: [
+      { id: "t1", type: "expense", amount: 100, accountId: "a1", categoryId: "c1" },
+      { id: "t2", type: "expense", amount: 100, date: "2026-09-07", accountId: "a1", categoryId: "c1" },
+      null,
+      { id: "t3", type: "bogus", amount: 100, date: "2026-09-07", accountId: "a1" },
+    ],
+  };
+  const m = migrate(data);
+  assertEqual(m.transactions.length, 1);
+  assertEqual(m.transactions[0].id, "t2");
+});
+
+test("migrate repara recurrentes sin lastPosted y con dayOfMonth fuera de rango", () => {
+  const data = {
+    schemaVersion: 1,
+    accounts: [], categories: [], transactions: [],
+    recurring: [{ id: "r1", type: "expense", amount: 500, accountId: "a1", categoryId: "c1", dayOfMonth: 40 }],
+  };
+  const m = migrate(data);
+  assertEqual(m.recurring.length, 1);
+  assertEqual(m.recurring[0].dayOfMonth, 28);
+  assertEqual(m.recurring[0].active, true);
+  assertTrue(/^\d{4}-\d{2}$/.test(m.recurring[0].lastPosted));
+  assertEqual(m.recurring[0].lastPosted, monthKey(todayStr()));
+});
+
+test("store.replace admite datos basura sin lanzar y postAutomatic sigue funcionando", () => {
+  const store = createStore({ storage: fakeStorage(), today: TODAY });
+  const garbage = {
+    schemaVersion: 1,
+    accounts: [{ id: "a1" }, null, "no-es-una-cuenta"],
+    categories: [{ id: "c1" }],
+    transactions: [
+      { id: "t1", type: "expense", amount: 100, accountId: "a1", categoryId: "c1" },
+      null,
+    ],
+    recurring: [{ id: "r1", type: "expense", amount: 500, accountId: "a1", categoryId: "c1", dayOfMonth: 40, active: true }],
+  };
+  store.replace(garbage);
+  assertEqual(store.getState().transactions.length, 0);
+  assertEqual(store.getState().accounts.length, 1);
+  postAutomatic(store, TODAY());
+  assertTrue(/^\d{4}-\d{2}$/.test(store.getState().recurring[0].lastPosted));
 });
 
 test("exportJSON y parseImport son inversos", () => {

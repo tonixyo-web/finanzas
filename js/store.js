@@ -36,6 +36,15 @@ export function defaultState(today = todayStr()) {
   return { schemaVersion: SCHEMA_VERSION, accounts, valuations: [], categories, transactions: [], recurring: [], meta: { interestLastPosted } };
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MONTH_RE = /^\d{4}-\d{2}$/;
+const TX_TYPES = new Set(["expense", "income", "transfer"]);
+const RECURRING_TYPES = new Set(["expense", "income"]);
+
+function isObj(x) {
+  return x !== null && typeof x === "object" && !Array.isArray(x);
+}
+
 export function migrate(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Formato no válido");
   if (data.schemaVersion !== SCHEMA_VERSION) throw new Error(`Versión de datos no soportada: ${data.schemaVersion}`);
@@ -46,6 +55,62 @@ export function migrate(data) {
   if (!Array.isArray(out.valuations)) out.valuations = [];
   if (!Array.isArray(out.recurring)) out.recurring = [];
   out.meta = { interestLastPosted: {}, ...(data.meta || {}) };
+
+  out.accounts = out.accounts
+    .filter(isObj)
+    .filter(a => typeof a.id === "string" && a.id)
+    .map((a, i) => ({
+      ...a,
+      order: a.order ?? i,
+      valuation: a.valuation ?? "ledger",
+      initialBalance: a.initialBalance ?? 0,
+      annualRate: a.annualRate ?? 0,
+      kind: a.kind ?? "bank",
+      color: a.color ?? "#8e8e93",
+      icon: a.icon ?? "💳",
+      name: a.name ?? "Cuenta",
+    }));
+
+  out.categories = out.categories
+    .filter(isObj)
+    .filter(c => typeof c.id === "string" && c.id)
+    .map((c, i) => ({
+      ...c,
+      name: c.name ?? "Categoría",
+      color: c.color ?? "#8e8e93",
+      icon: c.icon ?? "🏷️",
+      system: c.system ?? false,
+      order: c.order ?? i,
+    }));
+
+  out.transactions = out.transactions
+    .filter(isObj)
+    .filter(t => TX_TYPES.has(t.type) && DATE_RE.test(t.date) && Number.isInteger(t.amount) && t.amount > 0
+      && typeof t.accountId === "string" && t.accountId)
+    .map(t => ({ ...t, note: t.note ?? "", source: t.source ?? "manual" }));
+
+  out.valuations = out.valuations
+    .filter(isObj)
+    .filter(v => typeof v.accountId === "string" && v.accountId && DATE_RE.test(v.date) && Number.isInteger(v.value));
+
+  out.recurring = out.recurring
+    .filter(isObj)
+    .filter(r => typeof r.id === "string" && r.id && RECURRING_TYPES.has(r.type)
+      && Number.isInteger(r.amount) && r.amount > 0 && typeof r.accountId === "string" && r.accountId)
+    .map(r => {
+      let day = Number(r.dayOfMonth);
+      if (!Number.isFinite(day)) day = 1;
+      day = Math.max(1, Math.min(28, Math.trunc(day)));
+      const lastPosted = MONTH_RE.test(r.lastPosted) ? r.lastPosted : monthKey(todayStr());
+      return { ...r, dayOfMonth: day, active: r.active ?? true, lastPosted };
+    });
+
+  const interestLastPosted = {};
+  for (const [id, month] of Object.entries(out.meta.interestLastPosted || {})) {
+    if (MONTH_RE.test(month)) interestLastPosted[id] = month;
+  }
+  out.meta = { ...out.meta, interestLastPosted };
+
   return out;
 }
 
@@ -65,8 +130,23 @@ export function createStore({ storage = globalThis.localStorage, today = todaySt
     }
   }
   const listeners = new Set();
-  const save = () => storage.setItem(STORAGE_KEY, JSON.stringify(state));
-  const notify = () => listeners.forEach(l => l(state));
+  const save = () => {
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      console.error(err);
+      if (globalThis.window) globalThis.window.dispatchEvent(new CustomEvent("store-error"));
+    }
+  };
+  const notify = () => {
+    for (const l of listeners) {
+      try {
+        l(state);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
   if (raw == null) save();
   return {
     get corrupt() { return corrupt; },
