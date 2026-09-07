@@ -129,7 +129,10 @@ acceso al DOM ni a localStorage.
 
 - **Saldo cuenta ledger** = initialBalance + ingresos + transferencias recibidas − gastos −
   transferencias enviadas, hasta la fecha indicada (por defecto hoy).
-- **Saldo cuenta manual** = valor de la última valoración con fecha ≤ fecha indicada, o 0.
+- **Saldo cuenta manual** = valor de la última valoración con fecha ≤ fecha indicada (o 0 si
+  no hay ninguna) más las transferencias netas recibidas con fecha posterior a esa valoración.
+  Así una transferencia a Bitcoin se refleja al instante y la siguiente valoración vuelve a
+  fijar la base.
 - **Patrimonio** = suma de saldos de todas las cuentas.
 - **Resumen mensual** (para un `YYYY-MM`):
   - ingresos = suma de `income` del mes.
