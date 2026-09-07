@@ -29,7 +29,7 @@ export function renderSettings(el, ctx) {
   }
 
   function root() {
-    el.append(
+    el.append(...[
       h("header", { class: "page-header" }, h("h1", null, "Ajustes")),
       store.corrupt && h("div", { class: "warning" }, "Los datos guardados no se pudieron leer y se ha empezado de cero. El contenido original se conserva en el navegador; importa una copia de seguridad si tienes una."),
       h("div", { class: "card list" },
@@ -42,7 +42,8 @@ export function renderSettings(el, ctx) {
         navRow("Importar datos", "Reemplaza los datos con un archivo JSON", importBackup)),
       h("div", { class: "section-title" }, "Información"),
       h("div", { class: "card list" },
-        h("div", { class: "row" }, h("div", { class: "row-main" }, h("div", { class: "row-title" }, "Versión")), h("div", { class: "muted" }, APP_VERSION))));
+        h("div", { class: "row" }, h("div", { class: "row-main" }, h("div", { class: "row-title" }, "Versión")), h("div", { class: "muted" }, APP_VERSION))),
+    ].filter(Boolean));
   }
 
   function accounts() {
