@@ -48,13 +48,14 @@ function render() {
     main.append(h("div", { class: "warning" }, "Error al mostrar esta pantalla. Ve a Ajustes → Importar datos para restaurar una copia."));
   }
   document.querySelectorAll(".tabbar a").forEach(a => a.classList.toggle("active", a.dataset.tab === current));
+  corruptBanner.hidden = !store.corrupt;
   window.scrollTo(0, scrollY);
 }
 
-if (store.corrupt) {
-  main.before(h("div", { class: "warning" },
-    "Los datos guardados no se pudieron leer y se ha empezado de cero. El contenido original se conserva en el navegador; importa una copia de seguridad si tienes una. Ajustes → Importar datos."));
-}
+const corruptBanner = h("div", { class: "warning" },
+  "Los datos guardados no se pudieron leer y se ha empezado de cero. El contenido original se conserva en el navegador; importa una copia de seguridad si tienes una. Ajustes → Importar datos.");
+corruptBanner.hidden = !store.corrupt;
+main.before(corruptBanner);
 
 window.addEventListener("hashchange", () => {
   const t = tabFromHash();
@@ -67,6 +68,8 @@ document.addEventListener("visibilitychange", () => {
 });
 render();
 
-if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+// En localhost (servidor de desarrollo tools/serve.ps1) no se registra el service worker
+// para que cada recarga muestre el código actual y no una copia en caché.
+if ("serviceWorker" in navigator && location.protocol.startsWith("http") && location.hostname !== "localhost") {
   navigator.serviceWorker.register("./sw.js").catch(() => {});
 }

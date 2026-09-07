@@ -31,6 +31,6 @@ Ajustes → Exportar datos guarda un archivo JSON (por ejemplo en Archivos o iCl
 
 ## Desarrollo
 
-- Sin dependencias. Abre `index.html` en un navegador para probar.
+- Sin dependencias. Para probar en el PC hace falta un servidor local (los navegadores bloquean los módulos JS abiertos como archivo): ejecuta `powershell -ExecutionPolicy Bypass -File tools/serve.ps1` (o botón derecho sobre `tools\serve.ps1` → "Ejecutar con PowerShell") y abre `http://localhost:8080/`. En localhost no se activa el modo sin conexión, así cada recarga muestra el código actual.
 - Tests: abre `tests/tests.html`, o ejecuta `bash tests/run-tests.sh` (usa Microsoft Edge en modo headless).
 - Iconos: `powershell -ExecutionPolicy Bypass -File tools/make-icons.ps1`.
