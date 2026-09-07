@@ -151,3 +151,104 @@ test("categorySeries suma gastos de una categoría por mes", () => {
     { ym: "2026-07", amount: 0 }, { ym: "2026-08", amount: 300 }, { ym: "2026-09", amount: 200 },
   ]);
 });
+
+import {
+  pendingInterest, pendingRecurring, initialLastPosted, validateTransaction,
+  accountInUse, categoryUsageCount, CAT_INTEREST
+} from "../js/model.js";
+
+let idCounter = 0;
+const makeId = () => `id-${++idCounter}`;
+
+test("pendingInterest genera un ingreso por mes pendiente con interés compuesto", () => {
+  const s = baseState();
+  s.accounts.find(a => a.id === "tr").annualRate = 12; // 1 % al mes
+  s.transactions = [tx({ type: "transfer", amount: 100000, date: "2026-06-10", accountId: "bank", toAccountId: "tr" })];
+  s.meta.interestLastPosted = { tr: "2026-06" };
+  const r = pendingInterest(s, "2026-08-15", makeId);
+  assertEqual(r.transactions.length, 2);
+  assertEqual(r.transactions[0].date, "2026-07-01");
+  assertEqual(r.transactions[0].amount, 1000);
+  assertEqual(r.transactions[0].categoryId, CAT_INTEREST);
+  assertEqual(r.transactions[0].source, "interest");
+  assertEqual(r.transactions[0].accountId, "tr");
+  assertEqual(r.transactions[1].date, "2026-08-01");
+  assertEqual(r.transactions[1].amount, 1010);
+  assertEqual(r.interestLastPosted, { tr: "2026-08" });
+});
+
+test("pendingInterest no hace nada si ya está al día o el saldo es cero", () => {
+  const s = baseState();
+  s.meta.interestLastPosted = { tr: "2026-09" };
+  assertEqual(pendingInterest(s, "2026-09-20", makeId).transactions, []);
+  s.meta.interestLastPosted = { tr: "2026-07" };
+  const r = pendingInterest(s, "2026-09-20", makeId);
+  assertEqual(r.transactions, []);
+  assertEqual(r.interestLastPosted, { tr: "2026-09" });
+});
+
+test("pendingInterest fija el mes actual a cuentas nuevas sin atrasos", () => {
+  const s = baseState();
+  s.transactions = [tx({ type: "transfer", amount: 100000, date: "2026-01-10", accountId: "bank", toAccountId: "tr" })];
+  s.meta.interestLastPosted = {};
+  const r = pendingInterest(s, "2026-09-20", makeId);
+  assertEqual(r.transactions, []);
+  assertEqual(r.interestLastPosted, { tr: "2026-09" });
+});
+
+test("pendingRecurring registra los meses pendientes cuyo día ya llegó", () => {
+  const s = baseState();
+  s.recurring = [
+    { id: "r1", type: "expense", amount: 60000, accountId: "bank", categoryId: "c1", note: "Alquiler", dayOfMonth: 1, active: true, lastPosted: "2026-06" },
+    { id: "r2", type: "income", amount: 180000, accountId: "bank", categoryId: "c2", note: "", dayOfMonth: 28, active: true, lastPosted: "2026-07" },
+    { id: "r3", type: "expense", amount: 1, accountId: "bank", categoryId: "c1", note: "", dayOfMonth: 1, active: false, lastPosted: "2026-01" },
+  ];
+  const r = pendingRecurring(s, "2026-08-15", makeId);
+  assertEqual(r.transactions.map(t => [t.date, t.amount, t.type, t.source, t.recurringId]), [
+    ["2026-07-01", 60000, "expense", "recurring", "r1"],
+    ["2026-08-01", 60000, "expense", "recurring", "r1"],
+  ]);
+  assertEqual(r.transactions[0].note, "Alquiler");
+  assertEqual(r.recurring.find(x => x.id === "r1").lastPosted, "2026-08");
+  assertEqual(r.recurring.find(x => x.id === "r2").lastPosted, "2026-07");
+  assertEqual(r.recurring.find(x => x.id === "r3").lastPosted, "2026-01");
+});
+
+test("pendingRecurring devuelve el mismo array si no hay cambios", () => {
+  const s = baseState();
+  s.recurring = [{ id: "r1", type: "expense", amount: 1, accountId: "bank", categoryId: "c1", note: "", dayOfMonth: 20, active: true, lastPosted: "2026-09" }];
+  const r = pendingRecurring(s, "2026-09-25", makeId);
+  assertEqual(r.transactions, []);
+  assertEqual(r.recurring === s.recurring, true);
+});
+
+test("initialLastPosted según si el día ya pasó", () => {
+  assertEqual(initialLastPosted(5, "2026-09-07"), "2026-09");
+  assertEqual(initialLastPosted(7, "2026-09-07"), "2026-09");
+  assertEqual(initialLastPosted(20, "2026-09-07"), "2026-08");
+});
+
+test("validateTransaction devuelve errores en castellano", () => {
+  assertEqual(validateTransaction({ type: "expense", amount: 100, date: "2026-09-07", accountId: "bank", categoryId: "c1" }), []);
+  assertEqual(validateTransaction({ type: "transfer", amount: 100, date: "2026-09-07", accountId: "bank", toAccountId: "sav" }), []);
+  assertEqual(validateTransaction({ type: "expense", amount: 0, date: "2026-09-07", accountId: "bank", categoryId: "c1" }), ["El importe debe ser mayor que cero"]);
+  assertEqual(validateTransaction({ type: "transfer", amount: 100, date: "2026-09-07", accountId: "bank", toAccountId: "bank" }), ["Origen y destino deben ser distintos"]);
+  assertEqual(validateTransaction({ type: "transfer", amount: 100, date: "2026-09-07", accountId: "bank", toAccountId: "" }), ["Elige la cuenta destino"]);
+  assertEqual(validateTransaction({ type: "income", amount: 100, date: "2026-09-07", accountId: "bank", categoryId: "" }), ["Elige una categoría"]);
+  assertEqual(validateTransaction({ type: "income", amount: 100, date: "", accountId: "bank", categoryId: "c1" }), ["Fecha no válida"]);
+  assertEqual(validateTransaction({ type: "income", amount: 100, date: "2026-09-07", accountId: "", categoryId: "c1" }), ["Elige una cuenta"]);
+});
+
+test("accountInUse y categoryUsageCount", () => {
+  const s = baseState();
+  s.transactions = [tx({ type: "transfer", amount: 1, date: "2026-09-01", accountId: "bank", toAccountId: "sav" })];
+  s.recurring = [{ id: "r", type: "expense", amount: 1, accountId: "tr", categoryId: "c2", note: "", dayOfMonth: 1, active: true, lastPosted: "2026-09" }];
+  s.valuations = [{ id: "v", accountId: "btc", date: "2026-09-01", value: 1 }];
+  assertEqual(accountInUse(s, "bank"), true);
+  assertEqual(accountInUse(s, "sav"), true);
+  assertEqual(accountInUse(s, "tr"), true);
+  assertEqual(accountInUse(s, "btc"), true);
+  assertEqual(accountInUse(s, "nueva"), false);
+  assertEqual(categoryUsageCount(s, "c2"), 1);
+  assertEqual(categoryUsageCount(s, "c1"), 0);
+});

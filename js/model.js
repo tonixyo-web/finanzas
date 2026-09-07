@@ -1,4 +1,4 @@
-import { monthKey, addMonths, lastDayOfMonth, monthRange } from "./format.js";
+import { monthKey, addMonths, lastDayOfMonth, monthRange, pad2 } from "./format.js";
 
 export const CAT_INTEREST = "cat-interest";
 export const CAT_SALARY = "cat-salary";
@@ -103,4 +103,85 @@ export function categorySeries(state, categoryId, endYm, n = 12) {
       .filter(t => t.type === "expense" && t.categoryId === categoryId && monthKey(t.date) === ym)
       .reduce((sum, t) => sum + t.amount, 0),
   }));
+}
+
+export function pendingInterest(state, today, makeId) {
+  const currentYm = monthKey(today);
+  const transactions = [];
+  const interestLastPosted = { ...(state.meta?.interestLastPosted || {}) };
+  for (const acc of state.accounts) {
+    if (acc.valuation !== "ledger" || !(acc.annualRate > 0)) continue;
+    if (!interestLastPosted[acc.id]) { interestLastPosted[acc.id] = currentYm; continue; }
+    let ym = addMonths(interestLastPosted[acc.id], 1);
+    while (ym <= currentYm) {
+      const working = { ...state, transactions: [...state.transactions, ...transactions] };
+      const balance = accountBalance(working, acc.id, lastDayOfMonth(addMonths(ym, -1)));
+      const amount = Math.round(balance * acc.annualRate / 100 / 12);
+      if (amount > 0) {
+        transactions.push({
+          id: makeId(), type: "income", amount, date: `${ym}-01`, accountId: acc.id,
+          categoryId: CAT_INTEREST, note: "", source: "interest",
+        });
+      }
+      interestLastPosted[acc.id] = ym;
+      ym = addMonths(ym, 1);
+    }
+  }
+  return { transactions, interestLastPosted };
+}
+
+export function pendingRecurring(state, today, makeId) {
+  const currentYm = monthKey(today);
+  const transactions = [];
+  let changed = false;
+  const recurring = state.recurring.map(r => {
+    if (!r.active) return r;
+    let last = r.lastPosted;
+    let ym = addMonths(last, 1);
+    while (ym <= currentYm) {
+      const date = `${ym}-${pad2(r.dayOfMonth)}`;
+      if (date > today) break;
+      transactions.push({
+        id: makeId(), type: r.type, amount: r.amount, date, accountId: r.accountId,
+        categoryId: r.categoryId, note: r.note || "", source: "recurring", recurringId: r.id,
+      });
+      last = ym;
+      ym = addMonths(ym, 1);
+    }
+    if (last === r.lastPosted) return r;
+    changed = true;
+    return { ...r, lastPosted: last };
+  });
+  return { transactions, recurring: changed ? recurring : state.recurring };
+}
+
+export function initialLastPosted(dayOfMonth, today) {
+  const ym = monthKey(today);
+  const day = Number(today.slice(8, 10));
+  return dayOfMonth <= day ? ym : addMonths(ym, -1);
+}
+
+export function validateTransaction(tx) {
+  const errors = [];
+  if (!Number.isInteger(tx.amount) || tx.amount <= 0) errors.push("El importe debe ser mayor que cero");
+  if (!tx.accountId) errors.push("Elige una cuenta");
+  if (tx.type === "transfer") {
+    if (!tx.toAccountId) errors.push("Elige la cuenta destino");
+    else if (tx.toAccountId === tx.accountId) errors.push("Origen y destino deben ser distintos");
+  } else if (!tx.categoryId) {
+    errors.push("Elige una categoría");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tx.date || "")) errors.push("Fecha no válida");
+  return errors;
+}
+
+export function accountInUse(state, accountId) {
+  return state.transactions.some(t => t.accountId === accountId || t.toAccountId === accountId)
+    || state.valuations.some(v => v.accountId === accountId)
+    || state.recurring.some(r => r.accountId === accountId);
+}
+
+export function categoryUsageCount(state, categoryId) {
+  return state.transactions.filter(t => t.categoryId === categoryId).length
+    + state.recurring.filter(r => r.categoryId === categoryId).length;
 }
