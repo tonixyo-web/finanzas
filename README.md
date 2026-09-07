@@ -29,6 +29,8 @@ App web instalable (PWA) para apuntar ingresos, gastos, ahorro y cuentas, con di
 
 Ajustes → Exportar datos guarda un archivo JSON (por ejemplo en Archivos o iCloud Drive). Importar datos lo restaura. Los datos viven solo en el navegador del teléfono: si borras los datos de Safari o cambias de móvil, necesitarás esa copia.
 
+Ajustes → Cargar datos publicados descarga el archivo `datos/inicio-2026-09.json` de la propia web de la app y reemplaza los datos del teléfono con él. Sirve para meter movimientos preparados en el ordenador sin pasar archivos al móvil: edita ese JSON (o crea otro y cambia `PUBLISHED_DATA_URL` en `js/views/settings.js`), publica, y pulsa el botón en el iPhone.
+
 ## Desarrollo
 
 - Sin dependencias. Para probar en el PC hace falta un servidor local (los navegadores bloquean los módulos JS abiertos como archivo): ejecuta `powershell -ExecutionPolicy Bypass -File tools/serve.ps1` (o botón derecho sobre `tools\serve.ps1` → "Ejecutar con PowerShell") y abre `http://localhost:8080/`. En localhost no se activa el modo sin conexión, así cada recarga muestra el código actual.

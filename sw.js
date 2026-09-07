@@ -1,4 +1,4 @@
-const CACHE = "finanzas-v1";
+const CACHE = "finanzas-v2";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./css/base.css", "./css/components.css",
@@ -20,6 +20,8 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  // Los archivos de datos publicados (datos/) se piden siempre a la red, sin caché.
+  if (new URL(event.request.url).pathname.includes("/datos/")) return;
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then(cached => cached || fetch(event.request).then(res => {
       if (res.ok && new URL(event.request.url).origin === location.origin) {

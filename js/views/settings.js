@@ -5,7 +5,9 @@ import { exportJSON, parseImport } from "../store.js";
 import { deleteAccount, deleteCategory, deleteRecurring } from "../actions.js";
 import { openAccountSheet, openCategorySheet, openRecurringSheet } from "./settings-sheets.js";
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
+// Archivo de datos publicado junto a la app (carpeta datos/). Se carga desde Ajustes.
+const PUBLISHED_DATA_URL = "./datos/inicio-2026-09.json";
 
 let importInput = null;
 
@@ -41,7 +43,8 @@ export function renderSettings(el, ctx) {
       h("div", { class: "section-title" }, "Copia de seguridad"),
       h("div", { class: "card list" },
         navRow("Exportar datos", "Guarda un archivo JSON con todo", exportBackup),
-        navRow("Importar datos", "Reemplaza los datos con un archivo JSON", importBackup)),
+        navRow("Importar datos", "Reemplaza los datos con un archivo JSON", importBackup),
+        navRow("Cargar datos publicados", "Movimientos preparados en la web de la app", loadPublished)),
       h("div", { class: "section-title" }, "Información"),
       h("div", { class: "card list" },
         h("div", { class: "row" }, h("div", { class: "row-main" }, h("div", { class: "row-title" }, "Versión")), h("div", { class: "muted" }, APP_VERSION))),
@@ -138,10 +141,7 @@ export function renderSettings(el, ctx) {
       cleanup();
       if (!f) return;
       try {
-        const data = parseImport(await f.text());
-        if (!confirm(`Se reemplazarán todos los datos actuales por ${data.transactions.length} movimientos y ${data.accounts.length} cuentas. ¿Continuar?`)) return;
-        store.replace(data);
-        toast("Datos importados");
+        applyImport(await f.text());
       } catch (err) {
         toast(`No se pudo importar: ${err.message}`);
       }
@@ -149,5 +149,22 @@ export function renderSettings(el, ctx) {
     input.addEventListener("cancel", cleanup);
     document.body.append(input);
     input.click();
+  }
+
+  function applyImport(text) {
+    const data = parseImport(text);
+    if (!confirm(`Se reemplazarán todos los datos actuales por ${data.transactions.length} movimientos y ${data.accounts.length} cuentas. ¿Continuar?`)) return;
+    store.replace(data);
+    toast("Datos importados");
+  }
+
+  async function loadPublished() {
+    try {
+      const res = await fetch(PUBLISHED_DATA_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`archivo no encontrado (${res.status})`);
+      applyImport(await res.text());
+    } catch (err) {
+      toast(`No se pudo cargar: ${err.message}`);
+    }
   }
 }

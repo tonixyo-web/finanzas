@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "accounts": [
+    { "id": "acc-banco", "name": "Banco principal", "kind": "bank", "valuation": "ledger", "initialBalance": 9500, "annualRate": 0, "color": "#0a84ff", "icon": "🏦", "order": 0 },
+    { "id": "acc-ahorro", "name": "Cuenta de ahorro", "kind": "savings", "valuation": "ledger", "initialBalance": 0, "annualRate": 0, "color": "#30d158", "icon": "🐷", "order": 1 },
+    { "id": "acc-tr-efectivo", "name": "Trade Republic efectivo", "kind": "savings", "valuation": "ledger", "initialBalance": 0, "annualRate": 2, "color": "#5e5ce6", "icon": "💶", "order": 2 },
+    { "id": "acc-tr-cartera", "name": "Trade Republic cartera", "kind": "investment", "valuation": "manual", "initialBalance": 0, "annualRate": 0, "color": "#ff9f0a", "icon": "📈", "order": 3 },
+    { "id": "acc-bitcoin", "name": "Bitcoin", "kind": "crypto", "valuation": "manual", "initialBalance": 0, "annualRate": 0, "color": "#f7931a", "icon": "₿", "order": 4 }
+  ],
+  "valuations": [],
+  "categories": [
+    { "id": "cat-ocio", "name": "Ocio", "color": "#ff9f0a", "icon": "🎉", "system": false, "order": 0 },
+    { "id": "cat-tabaco", "name": "Tabaco", "color": "#8e8e93", "icon": "🚬", "system": false, "order": 1 },
+    { "id": "cat-mensual", "name": "Gasto mensual", "color": "#5e5ce6", "icon": "🏠", "system": false, "order": 2 },
+    { "id": "cat-comida", "name": "Comida", "color": "#30d158", "icon": "🛒", "system": false, "order": 3 },
+    { "id": "cat-transporte", "name": "Transporte", "color": "#64d2ff", "icon": "🚗", "system": false, "order": 4 },
+    { "id": "cat-compras", "name": "Compras", "color": "#ff375f", "icon": "🛍️", "system": false, "order": 5 },
+    { "id": "cat-salud", "name": "Salud", "color": "#ff453a", "icon": "❤️", "system": false, "order": 6 },
+    { "id": "cat-suscripciones", "name": "Suscripciones", "color": "#bf5af2", "icon": "📺", "system": false, "order": 7 },
+    { "id": "cat-other", "name": "Otros", "color": "#aeaeb2", "icon": "📦", "system": true, "order": 8 },
+    { "id": "cat-interest", "name": "Intereses", "color": "#ffd60a", "icon": "💰", "system": true, "order": 9 },
+    { "id": "cat-salary", "name": "Nómina", "color": "#34c759", "icon": "💼", "system": true, "order": 10 }
+  ],
+  "transactions": [
+    { "id": "tx-2026-08-28-01", "type": "income",   "amount": 159400, "date": "2026-08-28", "accountId": "acc-banco", "categoryId": "cat-salary", "note": "Nómina", "source": "manual" },
+    { "id": "tx-2026-08-28-02", "type": "transfer", "amount": 100000, "date": "2026-08-28", "accountId": "acc-banco", "toAccountId": "acc-ahorro", "note": "Ahorro", "source": "manual" },
+    { "id": "tx-2026-08-28-03", "type": "expense",  "amount": 1000,  "date": "2026-08-28", "accountId": "acc-banco", "categoryId": "cat-other",  "note": "Bizum Alex", "source": "manual" },
+    { "id": "tx-2026-08-28-04", "type": "expense",  "amount": 1270,  "date": "2026-08-28", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Cena", "source": "manual" },
+    { "id": "tx-2026-08-29-01", "type": "expense",  "amount": 1230,  "date": "2026-08-29", "accountId": "acc-banco", "categoryId": "cat-tabaco", "note": "Tabaco", "source": "manual" },
+    { "id": "tx-2026-08-29-02", "type": "expense",  "amount": 1100,  "date": "2026-08-29", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Cena", "source": "manual" },
+    { "id": "tx-2026-08-30-01", "type": "expense",  "amount": 300,   "date": "2026-08-30", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Polo", "source": "manual" },
+    { "id": "tx-2026-08-31-01", "type": "expense",  "amount": 65,    "date": "2026-08-31", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Café", "source": "manual" },
+    { "id": "tx-2026-08-31-02", "type": "expense",  "amount": 180,   "date": "2026-08-31", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Coca-Cola", "source": "manual" },
+    { "id": "tx-2026-09-01-01", "type": "expense",  "amount": 180,   "date": "2026-09-01", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Café", "source": "manual" },
+    { "id": "tx-2026-09-01-02", "type": "expense",  "amount": 1500,  "date": "2026-09-01", "accountId": "acc-banco", "categoryId": "cat-other",  "note": "Peluquería", "source": "manual" },
+    { "id": "tx-2026-09-02-01", "type": "expense",  "amount": 180,   "date": "2026-09-02", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Coca-Cola", "source": "manual" },
+    { "id": "tx-2026-09-02-02", "type": "expense",  "amount": 180,   "date": "2026-09-02", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Café", "source": "manual" },
+    { "id": "tx-2026-09-02-03", "type": "expense",  "amount": 630,   "date": "2026-09-02", "accountId": "acc-banco", "categoryId": "cat-tabaco", "note": "Tabaco", "source": "manual" },
+    { "id": "tx-2026-09-03-01", "type": "expense",  "amount": 180,   "date": "2026-09-03", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Coca-Cola", "source": "manual" },
+    { "id": "tx-2026-09-03-02", "type": "expense",  "amount": 1130,  "date": "2026-09-03", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Merienda", "source": "manual" },
+    { "id": "tx-2026-09-04-01", "type": "expense",  "amount": 180,   "date": "2026-09-04", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Coca-Cola", "source": "manual" },
+    { "id": "tx-2026-09-04-02", "type": "expense",  "amount": 2500,  "date": "2026-09-04", "accountId": "acc-banco", "categoryId": "cat-comida", "note": "Cena", "source": "manual" },
+    { "id": "tx-2026-09-04-03", "type": "expense",  "amount": 600,   "date": "2026-09-04", "accountId": "acc-banco", "categoryId": "cat-tabaco", "note": "Tabaco", "source": "manual" },
+    { "id": "tx-2026-09-04-04", "type": "expense",  "amount": 1700,  "date": "2026-09-04", "accountId": "acc-banco", "categoryId": "cat-ocio",   "note": "Cubatas", "source": "manual" }
+  ],
+  "recurring": [
+    { "id": "rec-spotify",     "type": "expense", "amount": 350,  "dayOfMonth": 1, "accountId": "acc-banco", "categoryId": "cat-suscripciones", "note": "Spotify",     "active": true, "lastPosted": "2026-08" },
+    { "id": "rec-gym",         "type": "expense", "amount": 1500, "dayOfMonth": 1, "accountId": "acc-banco", "categoryId": "cat-mensual",       "note": "Gimnasio",    "active": true, "lastPosted": "2026-08" },
+    { "id": "rec-crunchyroll", "type": "expense", "amount": 599,  "dayOfMonth": 1, "accountId": "acc-banco", "categoryId": "cat-suscripciones", "note": "Crunchyroll", "active": true, "lastPosted": "2026-08" }
+  ],
+  "meta": { "interestLastPosted": { "acc-tr-efectivo": "2026-09" } }
+}
