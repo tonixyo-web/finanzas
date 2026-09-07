@@ -31,7 +31,16 @@ export function openSheet({ title, content, saveLabel = "Guardar", onSave }) {
     setTimeout(() => overlay.remove(), 300);
   };
   const saveBtn = onSave
-    ? h("button", { class: "btn-text bold", type: "button", onClick: async () => { if ((await onSave()) !== false) close(); } }, saveLabel)
+    ? h("button", {
+      class: "btn-text bold", type: "button", onClick: async () => {
+        try {
+          if ((await onSave()) !== false) close();
+        } catch (err) {
+          console.error(err);
+          toast("No se pudo guardar");
+        }
+      },
+    }, saveLabel)
     : h("span");
   const sheet = h("div", { class: "sheet" },
     h("div", { class: "sheet-handle" }),
@@ -86,7 +95,7 @@ export function swipeRow(content, onDelete) {
   const wrap = h("div", { class: "swipe" },
     h("button", { class: "swipe-delete", type: "button", onClick: onDelete }, "Borrar"),
     content);
-  let startX = 0, startY = 0, dx = 0, open = false, dragging = false;
+  let startX = 0, startY = 0, dx = 0, open = false, dragging = false, suppressClick = false;
   content.addEventListener("touchstart", e => {
     startX = e.touches[0].clientX; startY = e.touches[0].clientY;
     dragging = false; content.style.transition = "none";
@@ -102,9 +111,17 @@ export function swipeRow(content, onDelete) {
     content.style.transition = "";
     open = dragging ? dx < -44 : false;
     content.style.transform = open ? "translateX(-88px)" : "";
+    suppressClick = dragging;
+    dragging = false;
   });
-  wrap.addEventListener("click", e => {
-    if (dragging) { e.stopPropagation(); e.preventDefault(); dragging = false; }
+  content.addEventListener("touchcancel", () => {
+    content.style.transition = "";
+    content.style.transform = open ? "translateX(-88px)" : "";
+    dragging = false;
+    suppressClick = false;
+  });
+  content.addEventListener("click", e => {
+    if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; }
   }, true);
   return wrap;
 }

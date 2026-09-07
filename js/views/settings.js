@@ -7,6 +7,8 @@ import { openAccountSheet, openCategorySheet, openRecurringSheet } from "./setti
 
 const APP_VERSION = "1.0.0";
 
+let importInput = null;
+
 export function renderSettings(el, ctx) {
   const { store, ui } = ctx;
   const state = store.getState();
@@ -113,16 +115,27 @@ export function renderSettings(el, ctx) {
     } catch (err) {
       if (err && err.name === "AbortError") return;
     }
-    const a = h("a", { href: URL.createObjectURL(blob), download: name });
+    const url = URL.createObjectURL(blob);
+    const a = h("a", { href: url, download: name });
     document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast("Archivo descargado");
   }
 
   function importBackup() {
-    const input = h("input", { type: "file", accept: "application/json,.json", style: { display: "none" } });
+    if (importInput) { importInput.remove(); importInput = null; }
+    const input = h("input", {
+      type: "file", accept: "application/json,.json",
+      style: { position: "fixed", left: "-9999px", width: "1px", height: "1px", opacity: "0" },
+    });
+    importInput = input;
+    const cleanup = () => {
+      if (importInput === input) importInput = null;
+      input.remove();
+    };
     input.addEventListener("change", async () => {
       const f = input.files?.[0];
-      input.remove();
+      cleanup();
       if (!f) return;
       try {
         const data = parseImport(await f.text());
@@ -133,6 +146,7 @@ export function renderSettings(el, ctx) {
         toast(`No se pudo importar: ${err.message}`);
       }
     });
+    input.addEventListener("cancel", cleanup);
     document.body.append(input);
     input.click();
   }
