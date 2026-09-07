@@ -103,7 +103,7 @@ export function swipeRow(content, onDelete) {
     open = dragging ? dx < -44 : false;
     content.style.transform = open ? "translateX(-88px)" : "";
   });
-  content.addEventListener("click", e => {
+  wrap.addEventListener("click", e => {
     if (dragging) { e.stopPropagation(); e.preventDefault(); dragging = false; }
   }, true);
   return wrap;
