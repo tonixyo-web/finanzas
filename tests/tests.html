@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tests Finanzas</title>
+<style>
+  body { font-family: system-ui, sans-serif; padding: 16px; }
+  .ok { color: #1a7f37; } .fail { color: #d1242f; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<h1>Tests</h1>
+<pre id="summary">pending</pre>
+<ul id="list"></ul>
+<script type="module">
+import { runAll } from "./runner.js";
+import "./format.test.js";
+import "./model.test.js";
+import "./store.test.js";
+
+const results = await runAll();
+const list = document.getElementById("list");
+for (const r of results) {
+  const li = document.createElement("li");
+  li.className = r.ok ? "ok" : "fail";
+  li.textContent = (r.ok ? "OK: " : "FAIL: ") + r.name + (r.ok ? "" : " — " + r.error);
+  list.appendChild(li);
+}
+const failed = results.filter(r => !r.ok).length;
+document.getElementById("summary").textContent =
+  `TESTS: ${results.length - failed} passed, ${failed} failed`;
+</script>
+</body>
+</html>
